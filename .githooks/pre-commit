@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Block commits that contain a Slack workflow webhook URL.
+if git diff --cached -U0 | grep -E '^\+.*hooks\.slack\.com/(triggers|services)/[A-Z0-9]+/[0-9A-Z]+/[A-Za-z0-9]+' >/dev/null; then
+  echo "Blocked: staged changes contain a Slack webhook URL. Keep it in the git-ignored config.json." >&2
+  exit 1
+fi

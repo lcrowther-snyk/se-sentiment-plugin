@@ -1,0 +1,7 @@
+# Real team config holds the Slack workflow webhook URL. Never commit it.
+skills/update-se-sentiment/config.json
+dist/
+*.plugin
+*.skill
+.DS_Store
+__pycache__/

@@ -1,0 +1,7 @@
+{
+  "name": "se-sentiment",
+  "version": "0.2.0",
+  "description": "Drafts SE Sentiment updates from each SE's own calls and notes and sends them to the SE in Slack for one-tap approval into Salesforce. Includes a one-time setup that checks connectors and schedules the daily run.",
+  "author": { "name": "Lawrence Crowther (APJ Solutions Engineering)" },
+  "keywords": ["salesforce", "se-sentiment", "slack", "apj"]
+}

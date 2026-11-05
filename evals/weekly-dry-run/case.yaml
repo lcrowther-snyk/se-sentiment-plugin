@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: weekly-dry-run
+expected_outcome: |
+  Finds Sam Example's open APJ opportunities and current sentiment from Snowflake, gathers recent call evidence (Gong via Atlas plus other sources), drafts colour + note only where there is new evidence, validates with a dry run, and sends nothing.
