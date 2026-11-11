@@ -110,3 +110,7 @@ Synced emails and call notes: `PROD_MODELED.GTM.TASKS` (`ACCOUNT_ID`, `ACTIVITY_
 ## I. Snyk product knowledge (AlphaPatch)
 
 Tool: `search_all_knowledge`, only when a call mentions a product gap or roadmap ask and you need to know whether it is GA, so the note doesn't overstate it.
+
+## L. Gong recap emails (SE's Gmail)
+
+Gong emails attendees a recap after recorded calls (summary, key points, next steps, link to the call). These usually arrive the same day, while Atlas can lag by weeks, so check them on every run. Gmail `search_threads`: `from:gong.io newer_than:<N>d` plus the account name, then `get_thread` for the body. Use the Gong call link in the email as `evidence_url`. If the SE's Gmail has none, the call may not have been recorded (e.g. recorder refused), or Gong recaps may be turned off for that SE.
