@@ -6,5 +6,17 @@
   "theatre": "APJ",
   "max_drafts_per_se_per_day": 5,
   "_note": "Copy to config.json (git-ignored) and fill in: webhook_url (Slack workflow trigger URL), log_doc_id (shared Google Doc draft log; the team needs edit access), summary_to (Slack user ID for the daily one-line summary, blank to turn off), pilot_recipient (Slack user ID that gets all drafts when pilot_mode is true).",
-  "summary_to": ""
+  "summary_to": "",
+  "drive_customer_roots": [
+    {
+      "name": "ANZ customers",
+      "folder_id": "",
+      "layout": "customer folders directly under the root"
+    },
+    {
+      "name": "APJ customers",
+      "folder_id": "",
+      "layout": "country folders (Japan, India, Singapore, ANZ, ...), customer folders inside each"
+    }
+  ]
 }

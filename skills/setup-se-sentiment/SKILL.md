@@ -28,6 +28,8 @@ Make one tiny read-only call per source and show a ✓ / ✗ table. Run them in 
 | Atlas (Gong) | `atlas_customer_intel` "List my accounts' most recent Gong call date" (slow; fine) | call content |
 | Confluence / tickets / Slack deal channels | `search_customer_tickets` "test", one result | PoV criteria, blockers |
 
+Also check the customer folders: list each root in `../update-se-sentiment/config.json` `drive_customer_roots` with `search_files` (`parentId = '<folder_id>'`, `pageSize` 1). If either fails, tell them to ask their SE lead for access to the ANZ / APJ customer folders (optional, but drafts are much better with it).
+
 Also read the shared draft log (`log_doc_id` in `../update-se-sentiment/config.json`) with Drive `read_file_content`. If it fails, tell them to ask their SE lead for edit access to "SE Sentiment draft log".
 
 For each ✗: say what it's for and how to fix it: "Open Settings → Connectors, find <name>, click Connect, then say 'check again'." Snowflake and Slack are required: if either is missing, stop after the table. The rest are optional: carry on, and say the drafts will have less evidence until they're connected.

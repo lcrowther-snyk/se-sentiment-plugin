@@ -114,3 +114,12 @@ Tool: `search_all_knowledge`, only when a call mentions a product gap or roadmap
 ## L. Gong recap emails (SE's Gmail)
 
 Gong emails attendees a recap after recorded calls (summary, key points, next steps, link to the call). These usually arrive the same day, while Atlas can lag by weeks, so check them on every run. Gmail `search_threads`: `from:gong.io newer_than:<N>d` plus the account name, then `get_thread` for the body. Use the Gong call link in the email as `evidence_url`. If the SE's Gmail has none, the call may not have been recorded (e.g. recorder refused), or Gong recaps may be turned off for that SE.
+
+## M. Customer folders in Google Drive
+
+Roots are in `config.json` `drive_customer_roots` (ANZ: customer folders directly under the root; APJ: country folders, then customer folders). Folder names are short and inconsistent ("NZTA" for New Zealand Transport Agency, "MMSG" for McMillan Shakespeare), so:
+
+1. Once per run, list the APJ root's country folders (`search_files` `parentId = '<root>' and mimeType = 'application/vnd.google-apps.folder'`, paginate) and keep their ids. The ANZ root's direct children are customer folders.
+2. Per account, search folders by name: `mimeType = 'application/vnd.google-apps.folder' and title contains '<word>'`, trying the account name, its first distinctive word, and any short form used in the opp name or meeting titles. Keep only results whose `parentId` is the ANZ root or an APJ country folder. If several match, prefer the one modified most recently; if none, note "no Drive folder" and move on.
+3. List the folder (`parentId = '<customer folder id>'`, plus one level of subfolders) and read files with `modifiedTime` inside the window: "Notes by Gemini" docs, "Customer Meeting Notes" (a running doc: read only entries dated in the window), PoV plan / "Success Worksheet", PoV wrap-up decks. Skip contracts, quotes and pricing files.
+4. Cite the Drive link of the file you used as `evidence_url`. Don't copy customer contact details from these docs into the note.

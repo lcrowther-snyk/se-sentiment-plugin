@@ -69,6 +69,7 @@ Read `references/sources.md` for how to query each source. In short, for each op
 5. **Slack deal channels**: recent deal-room posts for the account (blockers, wins, escalations).
 6. **Confluence customer pages**: PoV plan / success criteria, so progress can be judged against what was agreed (and so a tech Win/Loss can be judged against the criteria).
 7. **Support tickets**: open technical blockers for the account.
+8. **Customer folders in Google Drive** (sources M): the team keeps a folder per customer under the roots in `config.json` `drive_customer_roots`. SEs and AEs drop call notes there (Gemini notes, a running "Customer Meeting Notes" doc, often with the Gong recap pasted in), plus the PoV plan / success worksheet and wrap-up deck. Find the account's folder, read files modified in the window, and treat call notes like any other call evidence. Use the success worksheet and wrap-up to judge PoV progress and the tech decision.
 
 Run independent lookups in parallel. Atlas is slow (30 to 90 s); make one well-scoped call per account or one call covering the SE's accounts, not many rephrasings.
 
