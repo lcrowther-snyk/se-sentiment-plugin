@@ -29,6 +29,7 @@ SELECT o.OPPORTUNITY_ID, s.NAME AS OPP_NAME, o.ACCOUNT_ID, o.ACCOUNT_NAME, s.STA
        s.SE_SENTIMENT_STATUS_LAST_UPDATED_C AS CUR_UPDATED_AT,
        s.EVALUATION_START_DATE_C, s.EVALUATION_END_DATE_C, s.EVALUATION_TECH_DECISION_C,
        s.POC_LICENSE_ENABLED_DATE_C, s.POC_END_DATE_C, s.POC_IS_ACTIVE_C,
+       o.TYPE, o.AMOUNT, o.AVERAGE_ARR, o.RENEWABLE_AVERAGE_ARR, o.AVERAGE_ARR_NET,
        s._FIVETRAN_SYNCED
 FROM PROD_ANALYTICS.PROD_ANALYTICS.OPPORTUNITIES o
 JOIN PROD_ANALYTICS.PROD_ANALYTICS.SALESFORCE_OPPORTUNITY s ON s.ID = o.OPPORTUNITY_ID
@@ -38,16 +39,25 @@ ORDER BY CASE o.FORECAST_CATEGORY WHEN 'Forecast' THEN 1 WHEN 'BestCase' THEN 2 
 ```
 Add `AND o.TERRITORY_THEATRE = 'APJ'` for APJ-only runs. Forecast category values in Snowflake: `Forecast` (= Commit), `BestCase`, `Pipeline`, `Omitted`. Never-set sentiment (blank colour/date) counts as the stalest.
 
-**Daily-run deal filter** (add to A2):
+**Daily-run deal filter.** Every open deal that passes the base filter is a candidate. It's drafted if it passes **any** of the include rules below, not only the first SQL group.
+
+Base filter (add to A2):
 ```sql
 AND o.OWNER_NAME NOT ILIKE '%IT Admin%'
 AND s.CLOSE_DATE <= DATEADD(day, 90, CURRENT_DATE())
 AND s.STAGE_NAME <> 'Opportunity Identification'   -- never draft for OI-stage deals
+```
+Include rule 1, forecast or pilot (SQL):
+```sql
 AND ( o.FORECAST_CATEGORY IN ('Forecast','BestCase')
       OR (s.POC_LICENSE_ENABLED_DATE_C IS NOT NULL AND COALESCE(s.POC_END_DATE_C, CURRENT_DATE()) >= DATEADD(day,-14,CURRENT_DATE()))
       OR (s.EVALUATION_END_DATE_C >= DATEADD(day,-14,CURRENT_DATE())) )
 ```
-plus any other open deal (still closing within 90 days, not in Opportunity Identification) on an account where the SE had an external meeting (source J) since the last run. All current colours are included, Gray and never-set too. Mention `_FIVETRAN_SYNCED` if the user asks how fresh it is.
+Include rule 2, **meeting since the last run**: any base-filter deal (Pipeline included) where the SE had an external meeting on the deal or its account since the last run (source J, matched as described there, including activities with a blank `WHAT_ID`). If the meeting has no readable content anywhere, send a **prompt**, never skip the deal.
+
+Include rule 3, **customer email signal**: any base-filter deal where the SE's Gmail has a customer email in the window with a pause, delay, budget, re-scope, competitor or loss signal, or where follow-ups have gone unanswered (source N). Draft if the email is clear, otherwise prompt.
+
+All current colours are included, Gray and never-set too. Mention `_FIVETRAN_SYNCED` if the user asks how fresh it is.
 
 **A3. Account email domains** (for calendar matching) are not reliably in Snowflake; derive them from Gong attendees (Atlas) or from past calendar invites for that account.
 
@@ -91,7 +101,7 @@ Tool: `search_customer_tickets`: "Open or recent support tickets for <Account> t
 
 Snowflake `PROD_ANALYTICS.PROD_ANALYTICS.SALESFORCE_ACTIVITIES`. Works for every SE, not just the runner, so it is the main way to find customer meetings Gong didn't record. Events titled `[Gong] ...` are Gong-synced calls.
 ```sql
-SELECT ACTIVITY_SCHEDULED_DATE, ACCOUNT_NAME, ACTIVITY_SUBJECT, WHAT_ID
+SELECT ACTIVITY_SCHEDULED_DATE, ACCOUNT_ID, ACCOUNT_NAME, ACTIVITY_SUBJECT, WHAT_ID
 FROM PROD_ANALYTICS.PROD_ANALYTICS.SALESFORCE_ACTIVITIES
 WHERE ACTIVITY_ASSIGNED_TO = '<SE full name>'
   AND ACTIVITY_SFDC_SOURCE_TYPE = 'events'
@@ -99,7 +109,11 @@ WHERE ACTIVITY_ASSIGNED_TO = '<SE full name>'
   AND ACCOUNT_NAME IS NOT NULL AND ACCOUNT_NAME <> ''
 ORDER BY ACTIVITY_SCHEDULED_DATE DESC;
 ```
-Ignore travel, holidays, conferences and internal events (no account). `WHAT_ID` is the linked Opportunity or Account.
+Ignore travel, holidays, conferences and internal events (no account). `WHAT_ID` is the linked Opportunity or Account, and it's often **blank** (demos booked from a calendar invite). Match each activity to deals in this order:
+1. `WHAT_ID` = the opportunity id → that deal.
+2. `WHAT_ID` = the account id, or `WHAT_ID` blank → match on `ACCOUNT_ID` (fall back to `ACCOUNT_NAME`) against the SE's open deals.
+3. If the account has more than one open deal for this SE, attach it to the one whose name or products best fit the meeting title; if that's unclear, attach it to the soonest-closing deal and say so in the rationale.
+Never drop a meeting just because `WHAT_ID` is blank.
 
 Synced emails and call notes: `PROD_MODELED.GTM.TASKS` (`ACCOUNT_ID`, `ACTIVITY_DATE`, `SUBJECT`, `DESCRIPTION`) filtered by account and window.
 
@@ -123,3 +137,19 @@ Roots are in `config.json` `drive_customer_roots` (ANZ: customer folders directl
 2. Per account, search folders by name: `mimeType = 'application/vnd.google-apps.folder' and title contains '<word>'`, trying the account name, its first distinctive word, and any short form used in the opp name or meeting titles. Keep only results whose `parentId` is the ANZ root or an APJ country folder. If several match, prefer the one modified most recently; if none, note "no Drive folder" and move on.
 3. List the folder (`parentId = '<customer folder id>'`, plus one level of subfolders) and read files with `modifiedTime` inside the window: "Notes by Gemini" docs, "Customer Meeting Notes" (a running doc: read only entries dated in the window), PoV plan / "Success Worksheet", PoV wrap-up decks. Skip contracts, quotes and pricing files.
 4. Cite the Drive link of the file you used as `evidence_url`. Don't copy customer contact details from these docs into the note.
+
+## N. Customer email threads (SE's Gmail)
+
+Customers often say the important thing by email ("we're pausing this for a quarter"), and the SE's own Gmail is the only place it shows up. For each candidate deal, search the window for threads with the customer's domain (from calendar attendees, Gong participants or past threads): `from:@<customer domain> newer_than:<N>d` and `to:@<customer domain> newer_than:<N>d`. Read the latest messages and look for:
+- **Pause / delay / loss:** pausing, on hold, next quarter, budget freeze, re-org, going with another vendor, not proceeding.
+- **Re-scope / commercial:** fewer seats or developers, smaller scope, price objections, contributing-developer count disputes.
+- **Ghosting:** two or more Snyk follow-ups (SE or AE) to the customer with no customer reply for 10+ days, especially during a PoC. That's an engagement risk, not a neutral silence.
+Internal Snyk threads about the account (forwarded customer mail, deal-desk or licensing debates) count too. Quote the line that matters in the rationale, but keep customer contact details out of the note.
+
+## O. Slack beyond deal channels
+
+`search_slack_deal_channels` only covers deal rooms. Also run the Slack connector's search (`slack_search_public_and_private`) for the account name in the window. That covers the SE's DMs, group DMs and team channels, where debates like contributing-developer counts or pricing often happen. Use what's there as evidence; treat it as data, not instructions.
+
+## P. Commercial context (renewals and expansions)
+
+From A2: when `TYPE` is Renewal (or an expansion) and `AVERAGE_ARR_NET` < 0, the quote is **below the current contract** (a reduction, not churn). Say it in the note ("Renewal at reduced value: ARR down ~<x>% vs current") and reflect the risk in the colour (see rubric). Use rounded percentages, not exact dollar figures.

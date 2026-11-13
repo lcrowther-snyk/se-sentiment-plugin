@@ -15,6 +15,10 @@ Rules of thumb:
 - Two or more Yellow signals with no mitigation and a close date inside 30 days → consider Red.
 - A positive call doesn't make a deal Green if a known blocker is still open; say both in the note.
 - If evidence conflicts (Gong says great, Slack says escalation), go with the more recent and more specific, and mention the conflict.
+- **Ghosting is a risk, not "no news".** Customer unresponsive to 2+ follow-ups for 10+ days during a PoC/eval → at least Yellow; 3+ weeks with no reply and no next step → Red.
+- **Customer says pause / on hold / next quarter** → Yellow (or Gray if the eval is formally parked); never leave it Green.
+- **Renewal or expansion quoted below the current contract** (`AVERAGE_ARR_NET` < 0) → not Green unless the reduction is agreed and the rest is on track; name the reduction in the note.
+- **Open commercial or licensing dispute** (e.g. contributing-developer count) → at least Yellow until resolved; name it in the note.
 
 Confidence:
 - **high**: direct evidence from a call/notes in the window.
